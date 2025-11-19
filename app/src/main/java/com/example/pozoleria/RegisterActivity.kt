@@ -19,34 +19,33 @@ class RegisterActivity : AppCompatActivity() {
         binding = FormularioBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
-        // 🟢 Botón "Registrar usuario"
+        // 🟢 Acción del botón "Registrar usuario"
         binding.btnRegistrarUsuario.setOnClickListener {
             val nombre = binding.edtNombre.text.toString().trim()
             val correo = binding.edtEmailRegister.text.toString().trim()
             val password = binding.edtPasswordRegister.text.toString().trim()
             val confirmar = binding.edtConfirmPassword.text.toString().trim()
 
-            if (nombre.isEmpty() || correo.isEmpty() || password.isEmpty() || confirmar.isEmpty()) {
-                Toast.makeText(this, "Completa todos los campos", Toast.LENGTH_SHORT).show()
-                return@setOnClickListener
+            when {
+                nombre.isEmpty() || correo.isEmpty() || password.isEmpty() || confirmar.isEmpty() -> {
+                    Toast.makeText(this, "Completa todos los campos", Toast.LENGTH_SHORT).show()
+                }
+                password != confirmar -> {
+                    Toast.makeText(this, "Las contraseñas no coinciden", Toast.LENGTH_SHORT).show()
+                }
+                else -> {
+                    registrarUsuario(nombre, correo, password)
+                }
             }
-
-            if (password != confirmar) {
-                Toast.makeText(this, "Las contraseñas no coinciden", Toast.LENGTH_SHORT).show()
-                return@setOnClickListener
-            }
-
-            registrarUsuario(nombre, correo, password)
         }
 
         // 🔙 Volver al login
-        binding.txtIrLogin.setOnClickListener {
-            finish()
-        }
+        binding.txtIrLogin.setOnClickListener { finish() }
     }
 
-    // 🔹 Enviar datos al backend
+    // 🔹 Conexión al backend
     private fun registrarUsuario(nombre: String, correo: String, password: String) {
+        // ✅ IP correcta para emulador
         val url = "http://10.0.2.2:3000/api/usuarios/registro"
 
         val params = JSONObject().apply {
@@ -56,30 +55,28 @@ class RegisterActivity : AppCompatActivity() {
         }
 
         val request = object : JsonObjectRequest(
-            Method.POST, url, params,
+            Request.Method.POST, url, params,
             { response ->
                 val mensaje = response.optString("message", "Usuario registrado correctamente ✅")
                 Toast.makeText(this, mensaje, Toast.LENGTH_SHORT).show()
-                finish()
+                finish() // Volver al login tras éxito
             },
             { error ->
                 val code = error.networkResponse?.statusCode
                 val body = error.networkResponse?.data?.toString(Charsets.UTF_8)
                 val mensaje = when {
                     code != null -> "Error HTTP $code: $body"
-                    else -> "❌ Error de conexión con el servidor"
+                    else -> "❌ No se pudo conectar con el servidor"
                 }
                 Toast.makeText(this, mensaje, Toast.LENGTH_LONG).show()
             }
         ) {
             override fun getHeaders(): MutableMap<String, String> {
-                val headers = HashMap<String, String>()
-                headers["Content-Type"] = "application/json; charset=utf-8"
-                return headers
+                return hashMapOf("Content-Type" to "application/json; charset=utf-8")
             }
         }
 
-        // ⏱ Política de espera
+        // ⏱ Política de reintento
         request.retryPolicy = DefaultRetryPolicy(
             8000,
             DefaultRetryPolicy.DEFAULT_MAX_RETRIES,
