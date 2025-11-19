@@ -36,13 +36,13 @@ class MainActivity : AppCompatActivity() {
 
         // 🟢 Texto "¿No tienes cuenta? Regístrate aquí"
         binding.txtRegistrar.setOnClickListener {
-            val intent = Intent(this, RegisterActivity::class.java)
-            startActivity(intent)
+            startActivity(Intent(this, RegisterActivity::class.java))
         }
     }
 
     // 🔹 Función para iniciar sesión
     private fun iniciarSesion(email: String, password: String) {
+        // ✅ IP correcta para emulador
         val url = "http://10.0.2.2:3000/api/usuarios/login"
 
         val params = JSONObject().apply {
@@ -56,7 +56,7 @@ class MainActivity : AppCompatActivity() {
                 val mensaje = response.optString("message", "Inicio de sesión exitoso ✅")
                 Toast.makeText(this, mensaje, Toast.LENGTH_SHORT).show()
 
-                // ✅ Ir a la pantalla principal
+                // ✅ Ir al menú principal tras login exitoso
                 val intent = Intent(this, MenuPrincipalActivity::class.java)
                 startActivity(intent)
                 finish()
@@ -66,16 +66,14 @@ class MainActivity : AppCompatActivity() {
                 val body = error.networkResponse?.data?.toString(Charsets.UTF_8)
                 val mensaje = when {
                     code != null -> "Error HTTP $code: $body"
-                    else -> "❌ Error de conexión con el servidor"
+                    else -> "❌ No se pudo conectar con el servidor"
                 }
                 Toast.makeText(this, mensaje, Toast.LENGTH_LONG).show()
-                Log.e("VOLLEY", mensaje)
+                Log.e("VOLLEY_ERROR", mensaje)
             }
         ) {
             override fun getHeaders(): MutableMap<String, String> {
-                val headers = HashMap<String, String>()
-                headers["Content-Type"] = "application/json; charset=utf-8"
-                return headers
+                return hashMapOf("Content-Type" to "application/json; charset=utf-8")
             }
         }
 
